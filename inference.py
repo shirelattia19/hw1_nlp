@@ -3,6 +3,7 @@ from tqdm import tqdm
 
 
 def memm_viterbi(sentence, pre_trained_weights, feature2id):
+    # TODO : implement this function
     """
     Write your MEMM Viterbi implementation below
     You can implement Beam Search to improve runtime
