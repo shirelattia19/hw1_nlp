@@ -110,7 +110,7 @@ class FeatureStatistics:
                             self.feature_rep_dict["capitals"][(cur_word, cur_tag)] += 1
 
                     # feature for digits
-                    if cur_word.isdigit():
+                    if any(c.isdigit() for c in cur_word):
                         if (cur_word, cur_tag) not in self.feature_rep_dict["digits"]:
                             self.feature_rep_dict["digits"][(cur_word, cur_tag)] = 1
                         else:
@@ -259,7 +259,7 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
         features.append(dict_of_dicts["f107"][(n_word, c_tag)])
 
     # feature for digits
-    if c_word.isdigit():
+    if any(c.isdigit() for c in c_word):
         if (c_word, c_tag) in ["digits"]:
             features.append(dict_of_dicts["digits"][(c_word, c_tag)])
 
