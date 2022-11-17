@@ -14,7 +14,8 @@ class FeatureStatistics:
         self.n_total_features = 0  # Total number of features accumulated
 
         # Init all features dictionaries
-        feature_dict_list = ["f100", "f101", "f102", "f103", "f104", "f105", "f106", "f107", "digits", "capitals"]  # the feature classes used in the code
+        feature_dict_list = ["f100", "f101", "f102", "f103", "f104", "f105", "f106", "f107", "digits", "capitals",
+                             "tiret", "double", "point"]  # the feature classes used in the code
         self.feature_rep_dict = {fd: OrderedDict() for fd in feature_dict_list}
         '''
         A dictionary containing the counts of each data regarding a feature class. For example in f100, would contain
@@ -50,7 +51,7 @@ class FeatureStatistics:
                         self.feature_rep_dict["f100"][(cur_word, cur_tag)] += 1
 
                     # f101
-                    suffixes = set(cur_word[-1 * i:] for i in range(1,  min(5, len(cur_word))))
+                    suffixes = set(cur_word[-1 * i:] for i in range(1, 5))
                     for suf in suffixes:
                         if (suf, cur_tag) not in self.feature_rep_dict["f101"]:
                             self.feature_rep_dict["f101"][(suf, cur_tag)] = 1
@@ -58,7 +59,7 @@ class FeatureStatistics:
                             self.feature_rep_dict["f101"][(suf, cur_tag)] += 1
 
                     # f102
-                    prefixes = set(cur_word[:i] for i in range(1,  min(5, len(cur_word))))
+                    prefixes = set(cur_word[:i] for i in range(1, 5))
                     for pre in prefixes:
                         if (pre, cur_tag) not in self.feature_rep_dict["f102"]:
                             self.feature_rep_dict["f102"][(pre, cur_tag)] = 1
@@ -94,7 +95,7 @@ class FeatureStatistics:
                     else:
                         self.feature_rep_dict["f106"][(pre_word, cur_tag)] += 1
 
-                    next_word = "~" if word_idx == len(split_words)-1 else split_words[word_idx + 1].split('_')[0]
+                    next_word = "~" if word_idx == len(split_words) - 1 else split_words[word_idx + 1].split('_')[0]
 
                     # f107
                     if (next_word, cur_tag) not in self.feature_rep_dict["f107"]:
@@ -115,6 +116,27 @@ class FeatureStatistics:
                             self.feature_rep_dict["digits"][(cur_word, cur_tag)] = 1
                         else:
                             self.feature_rep_dict["digits"][(cur_word, cur_tag)] += 1
+
+                    # '-' in the word
+                    if len(cur_word) > 2 and '-' in cur_word[1:-1]:
+                        if (cur_word, cur_tag) not in self.feature_rep_dict["tiret"]:
+                            self.feature_rep_dict["tiret"][(cur_word, cur_tag)] = 1
+                        else:
+                            self.feature_rep_dict["tiret"][(cur_word, cur_tag)] += 1
+
+                    # '.' in the word but not alone
+                    if len(cur_word) > 1 and '.' in cur_word:
+                        if (cur_word, cur_tag) not in self.feature_rep_dict["point"]:
+                            self.feature_rep_dict["point"][(cur_word, cur_tag)] = 1
+                        else:
+                            self.feature_rep_dict["point"][(cur_word, cur_tag)] += 1
+
+                    # double letters
+                    if len(cur_word) > 1 and True in [cur_word[i] == cur_word[i + 1] for i in range(len(cur_word) - 1)]:
+                        if (cur_word, cur_tag) not in self.feature_rep_dict["double"]:
+                            self.feature_rep_dict["double"][(cur_word, cur_tag)] = 1
+                        else:
+                            self.feature_rep_dict["double"][(cur_word, cur_tag)] += 1
 
                 sentence = [("*", "*"), ("*", "*")]
                 for pair in split_words:
@@ -142,17 +164,6 @@ class Feature2id:
 
         # Init all features dictionaries
         self.feature_to_idx = {fd: OrderedDict() for fd in self.feature_statistics.feature_rep_dict.keys()}
-        # self.feature_to_idx = {
-        #     "f100": OrderedDict(),
-        #     "f101": OrderedDict(),
-        #     "f102": OrderedDict(),
-        #     "f103": OrderedDict(),
-        #     "f104": OrderedDict(),
-        #     "f105": OrderedDict(),
-        #     "f106": OrderedDict(),
-        #     "f107": OrderedDict(),
-        #
-        # }
         self.represent_input_with_features = OrderedDict()
         self.histories_matrix = OrderedDict()
         self.histories_features = OrderedDict()
@@ -221,13 +232,13 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
         features.append(dict_of_dicts["f100"][(c_word, c_tag)])
 
     # f101
-    suffixes = set(c_word[-1 * i:] for i in range(1,  min(5, len(c_word))))
+    suffixes = set(c_word[-1 * i:] for i in range(1, 5))
     for suf in suffixes:
         if (suf, c_tag) in dict_of_dicts["f101"]:
             features.append(dict_of_dicts["f101"][(suf, c_tag)])
 
     # f102
-    prefixes = set(c_word[:i] for i in range(1, min(5, len(c_word))))
+    prefixes = set(c_word[:i] for i in range(1, 5))
     for pre in prefixes:
         if (pre, c_tag) in dict_of_dicts["f102"]:
             features.append(dict_of_dicts["f102"][(pre, c_tag)])
@@ -259,14 +270,24 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
         features.append(dict_of_dicts["f107"][(n_word, c_tag)])
 
     # feature for digits
-    if any(c.isdigit() for c in c_word):
-        if (c_word, c_tag) in ["digits"]:
-            features.append(dict_of_dicts["digits"][(c_word, c_tag)])
+    if (c_word, c_tag) in ["digits"]:
+        features.append(dict_of_dicts["digits"][(c_word, c_tag)])
 
     # feature for capital letters
-    if c_word[0].isupper() is True:
-        if (c_word, c_tag) in ["capitals"]:
-            features.append(dict_of_dicts["capitals"][(c_word, c_tag)])
+    if (c_word, c_tag) in ["capitals"]:
+        features.append(dict_of_dicts["capitals"][(c_word, c_tag)])
+
+    # feature for '-'
+    if (c_word, c_tag) in ["tiret"]:
+        features.append(dict_of_dicts["tiret"][(c_word, c_tag)])
+
+    # feature for '.'
+    if (c_word, c_tag) in ["point"]:
+        features.append(dict_of_dicts["point"][(c_word, c_tag)])
+
+    # double letters in a word
+    if (c_word, c_tag) in ["double"]:
+        features.append(dict_of_dicts["double"][(c_word, c_tag)])
 
     return features
 

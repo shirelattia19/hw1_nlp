@@ -19,22 +19,20 @@ def memm_viterbi(sentence, pre_trained_weights, feature2id, B=2):
         Sk = set(feature2id.feature_statistics.tags)
         tag_probabilities = {}
         for u in Sk_1:
-            for v in Sk:
-                for t in Sk_2:
-
-                    v_fs = {}
-                    for y_prime_tag in Sk:
-                        features_indexes = set()
-                        v_f = 0
-                        hist = (sentence[k], y_prime_tag, sentence[k - 1], u, sentence[k - 2], t, sentence[k + 1])
-                        features_indexes = features_indexes.union(
-                            set(represent_input_with_features(hist, feature2id.feature_to_idx)))
-                        for index in features_indexes:
-                            v_f += pre_trained_weights[index]
-                        v_fs[y_prime_tag] = v_f
-                    log_v_fs = np.log(np.sum(np.exp(list(v_fs.values()))))
-                    #sum_v_fs = np.sum(np.exp(list(v_fs.values())))
-
+            for t in Sk_2:
+                v_fs = {}
+                for y_prime_tag in Sk:
+                    features_indexes = set()
+                    v_f = 0
+                    hist = (sentence[k], y_prime_tag, sentence[k - 1], u, sentence[k - 2], t, sentence[k + 1])
+                    features_indexes = features_indexes.union(
+                        set(represent_input_with_features(hist, feature2id.feature_to_idx)))
+                    for index in features_indexes:
+                        v_f += pre_trained_weights[index]
+                    v_fs[y_prime_tag] = v_f
+                log_v_fs = np.log(np.sum(np.exp(list(v_fs.values()))))
+                #sum_v_fs = np.sum(np.exp(list(v_fs.values())))
+                for v in Sk:
                     q = (v_fs[v] - log_v_fs)
                     #q = (v_fs[v] / sum_v_fs)
                     if (t,u) in pi[k-2].keys():
@@ -46,12 +44,13 @@ def memm_viterbi(sentence, pre_trained_weights, feature2id, B=2):
         sorted_prob = sorted(tag_probabilities.items(), key=lambda g: g[1], reverse=True)
         Sk = []
         for count, ((t, u, v), prob) in enumerate(sorted_prob):
-            if count == B:
+            if len(pi) > k-1 and len(pi[k - 1]) == B:
                 break
             Sk.append(v)
             if len(pi) > k-1:
-                pi[k - 1][(u, v)] = prob
-                bp[k - 1][(u, v)] = t
+                if (u, v) not in pi[k - 1].keys():
+                    pi[k - 1][(u, v)] = prob
+                    bp[k - 1][(u, v)] = t
             else:
                 pi.append({(u, v): prob})
                 bp.append({(u, v): t})
@@ -64,21 +63,20 @@ def memm_viterbi(sentence, pre_trained_weights, feature2id, B=2):
     for k in range(2, n - 1):
         t.append(bp[n - k - 1][(t[k - 1], t[k - 2])])
     t = list(reversed(t))
-    t.append('~')
     return t[1:]
 
     # TODO add pi for ~
 
 
-def tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path):
+def tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path, B=2):
     tagged = "test" in test_path
     test = read_test(test_path, tagged=tagged)
 
-    output_file = open(predictions_path, "a+")
+    output_file = open(predictions_path, "w+")
 
     for k, sen in tqdm(enumerate(test), total=len(test)):
         sentence = sen[0]
-        pred = memm_viterbi(sentence, pre_trained_weights, feature2id)[1:]
+        pred = memm_viterbi(sentence, pre_trained_weights, feature2id, B)[1:]
         sentence = sentence[2:]
         for i in range(len(pred)):
             if i > 0:
