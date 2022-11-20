@@ -4,7 +4,6 @@ import numpy as np
 
 
 def memm_viterbi(sentence, pre_trained_weights, feature2id, B=2):
-    # TODO : implement this function
     """
     Write your MEMM Viterbi implementation below
     You can implement Beam Search to improve runtime
@@ -31,23 +30,21 @@ def memm_viterbi(sentence, pre_trained_weights, feature2id, B=2):
                         v_f += pre_trained_weights[index]
                     v_fs[y_prime_tag] = v_f
                 log_v_fs = np.log(np.sum(np.exp(list(v_fs.values()))))
-                #sum_v_fs = np.sum(np.exp(list(v_fs.values())))
+                # sum_v_fs = np.sum(np.exp(list(v_fs.values())))
                 for v in Sk:
                     q = (v_fs[v] - log_v_fs)
-                    #q = (v_fs[v] / sum_v_fs)
-                    if (t,u) in pi[k-2].keys():
+                    # q = (v_fs[v] / sum_v_fs)
+                    if (t, u) in pi[k - 2].keys():
                         tag_probabilities[(t, u, v)] = pi[k - 2][(t, u)] + q
-                        #tag_probabilities[(t, u, v)] = pi[k - 2][(t, u)] * q
-
-
+                        # tag_probabilities[(t, u, v)] = pi[k - 2][(t, u)] * q
 
         sorted_prob = sorted(tag_probabilities.items(), key=lambda g: g[1], reverse=True)
         Sk = []
         for count, ((t, u, v), prob) in enumerate(sorted_prob):
-            if len(pi) > k-1 and len(pi[k - 1]) == B:
+            if len(pi) > k - 1 and len(pi[k - 1]) == B:
                 break
             Sk.append(v)
-            if len(pi) > k-1:
+            if len(pi) > k - 1:
                 if (u, v) not in pi[k - 1].keys():
                     pi[k - 1][(u, v)] = prob
                     bp[k - 1][(u, v)] = t
@@ -64,8 +61,6 @@ def memm_viterbi(sentence, pre_trained_weights, feature2id, B=2):
         t.append(bp[n - k - 1][(t[k - 1], t[k - 2])])
     t = list(reversed(t))
     return t[1:]
-
-    # TODO add pi for ~
 
 
 def tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path, B=2):

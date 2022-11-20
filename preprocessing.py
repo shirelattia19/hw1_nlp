@@ -15,7 +15,7 @@ class FeatureStatistics:
 
         # Init all features dictionaries
         feature_dict_list = ["f100", "f101", "f102", "f103", "f104", "f105", "f106", "f107", "digits", "capitals",
-                             "tiret", "double", "point"]  # the feature classes used in the code
+                             "tiret", "double", "point", 'ed', 'ing']  # the feature classes used in the code
         self.feature_rep_dict = {fd: OrderedDict() for fd in feature_dict_list}
         '''
         A dictionary containing the counts of each data regarding a feature class. For example in f100, would contain
@@ -105,38 +105,52 @@ class FeatureStatistics:
 
                     # feature for capital letters
                     if cur_word[0].isupper():
-                        if (cur_word, cur_tag) not in self.feature_rep_dict["capitals"]:
-                            self.feature_rep_dict["capitals"][(cur_word, cur_tag)] = 1
+                        if cur_tag not in self.feature_rep_dict["capitals"]:
+                            self.feature_rep_dict["capitals"][cur_tag] = 1
                         else:
-                            self.feature_rep_dict["capitals"][(cur_word, cur_tag)] += 1
+                            self.feature_rep_dict["capitals"][cur_tag] += 1
 
                     # feature for digits
                     if any(c.isdigit() for c in cur_word):
-                        if (cur_word, cur_tag) not in self.feature_rep_dict["digits"]:
-                            self.feature_rep_dict["digits"][(cur_word, cur_tag)] = 1
+                        if cur_tag not in self.feature_rep_dict["digits"]:
+                            self.feature_rep_dict["digits"][cur_tag] = 1
                         else:
-                            self.feature_rep_dict["digits"][(cur_word, cur_tag)] += 1
+                            self.feature_rep_dict["digits"][cur_tag] += 1
 
                     # '-' in the word
                     if len(cur_word) > 2 and '-' in cur_word[1:-1]:
-                        if (cur_word, cur_tag) not in self.feature_rep_dict["tiret"]:
-                            self.feature_rep_dict["tiret"][(cur_word, cur_tag)] = 1
+                        if cur_tag not in self.feature_rep_dict["tiret"]:
+                            self.feature_rep_dict["tiret"][cur_tag] = 1
                         else:
-                            self.feature_rep_dict["tiret"][(cur_word, cur_tag)] += 1
+                            self.feature_rep_dict["tiret"][cur_tag] += 1
 
                     # '.' in the word but not alone
                     if len(cur_word) > 1 and '.' in cur_word:
-                        if (cur_word, cur_tag) not in self.feature_rep_dict["point"]:
-                            self.feature_rep_dict["point"][(cur_word, cur_tag)] = 1
+                        if cur_tag not in self.feature_rep_dict["point"]:
+                            self.feature_rep_dict["point"][cur_tag] = 1
                         else:
-                            self.feature_rep_dict["point"][(cur_word, cur_tag)] += 1
+                            self.feature_rep_dict["point"][cur_tag] += 1
 
                     # double letters
                     if len(cur_word) > 1 and True in [cur_word[i] == cur_word[i + 1] for i in range(len(cur_word) - 1)]:
-                        if (cur_word, cur_tag) not in self.feature_rep_dict["double"]:
-                            self.feature_rep_dict["double"][(cur_word, cur_tag)] = 1
+                        if t_1 not in self.feature_rep_dict["double"]:
+                            self.feature_rep_dict["double"][t_1] = 1
                         else:
-                            self.feature_rep_dict["double"][(cur_word, cur_tag)] += 1
+                            self.feature_rep_dict["double"][t_1] += 1
+
+                    # 'ed' words
+                    if cur_word.endswith('ed'):
+                        if t_1 not in self.feature_rep_dict["ed"]:
+                            self.feature_rep_dict["ed"][t_1] = 1
+                        else:
+                            self.feature_rep_dict["ed"][t_1] += 1
+
+                    # 'ing' words
+                    if cur_word.endswith('ing'):
+                        if t_1 not in self.feature_rep_dict["ing"]:
+                            self.feature_rep_dict["ing"][t_1] = 1
+                        else:
+                            self.feature_rep_dict["ing"][t_1] += 1
 
                 sentence = [("*", "*"), ("*", "*")]
                 for pair in split_words:
@@ -269,25 +283,34 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     if (n_word, c_tag) in dict_of_dicts["f107"]:
         features.append(dict_of_dicts["f107"][(n_word, c_tag)])
 
-    # feature for digits
-    if (c_word, c_tag) in ["digits"]:
-        features.append(dict_of_dicts["digits"][(c_word, c_tag)])
-
     # feature for capital letters
-    if (c_word, c_tag) in ["capitals"]:
-        features.append(dict_of_dicts["capitals"][(c_word, c_tag)])
+    if c_word[0].isupper() and c_tag in dict_of_dicts["capitals"]:
+        features.append(dict_of_dicts["capitals"][c_tag])
+
+    # feature for digits
+    if any(c.isdigit() for c in c_word) and c_tag in dict_of_dicts["digits"]:
+        features.append(dict_of_dicts["digits"][c_tag])
 
     # feature for '-'
-    if (c_word, c_tag) in ["tiret"]:
-        features.append(dict_of_dicts["tiret"][(c_word, c_tag)])
+    if len(c_word) > 2 and '-' in c_word[1:-1] and c_tag in dict_of_dicts["tiret"]:
+        features.append(dict_of_dicts["tiret"][c_tag])
 
     # feature for '.'
-    if (c_word, c_tag) in ["point"]:
-        features.append(dict_of_dicts["point"][(c_word, c_tag)])
+    if len(c_word) > 1 and '.' in c_word and c_tag in dict_of_dicts["point"]:
+        features.append(dict_of_dicts["point"][c_tag])
 
     # double letters in a word
-    if (c_word, c_tag) in ["double"]:
-        features.append(dict_of_dicts["double"][(c_word, c_tag)])
+    if len(c_word) > 1 and True in [c_word[i] == c_word[i + 1] for i in range(len(c_word) - 1)] \
+            and p_tag in dict_of_dicts["double"]:
+        features.append(dict_of_dicts["double"][p_tag])
+
+    # ed words
+    if c_word.endswith('ed') and p_tag in dict_of_dicts["ed"]:
+        features.append(dict_of_dicts["ed"][p_tag])
+
+    # ing words
+    if c_word.endswith('ing') and p_tag in dict_of_dicts["ing"]:
+        features.append(dict_of_dicts["ing"][p_tag])
 
     return features
 

@@ -7,6 +7,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix as c_f
 from sklearn.metrics import ConfusionMatrixDisplay
+import datetime
 
 
 def calc_accuracy(test_path, predictions_path):
@@ -24,6 +25,9 @@ def calc_accuracy(test_path, predictions_path):
             if line[-3:] == "~_~":
                 line = line[:-4]
             y_pred = y_pred + line.split(' ')
+    # for a, b in zip(y, y_pred):
+    #     if a != b:
+    #         print(f'{a}  vs  {b}')
     return list(a == b for a, b in zip(y, y_pred)).count(True) / len(y)
 
 
@@ -57,10 +61,7 @@ def get_metrics(test_path, feature2id, predictions_path):
     # Selecting ten worst tags
     ten_worst = np.argsort(np.sum(for_worst, axis=0))[-10:]
     ten_worst_conf_mat = confusion_matrix[np.ix_(ten_worst, ten_worst)]
-    # Computing Accuracy
-    accuracy = 100 * np.trace(confusion_matrix) / np.sum(confusion_matrix)
-    # print("Model " + str(num_model) + " Accuracy.: " + str(accuracy) + " %")
-    print("Accuracy.: " + str(accuracy) + " %")
+
     print("Ten Worst Elements: " + str([dict_tags[i] for i in ten_worst]))
     print("Confusion Matrix:")
     print(ten_worst_conf_mat)
@@ -74,19 +75,32 @@ def get_metrics(test_path, feature2id, predictions_path):
 
     plt.show()
 
-def main():
-    threshold = 1
-    lam = 1
 
-    train_path = "data/train2.wtag"
+def check_reproducible(test_path, pre_trained_weights, feature2id, predictions_path):
+    predictions_path_last = 'predictions_last.wtag'
+    tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path_last)
+    accuracy = calc_accuracy(predictions_path_last, predictions_path)
+    print(f'Two test1 in a row looks the same at {accuracy * 100} %')
+
+
+def main():
+    model = 1
+    threshold = 1
+    lam = 0.8
+    my_print = ''
+    train_path = f"data/train{model}.wtag"
     # test_path = "data/comp1.words"
     test_path = "data/test1.wtag"
 
-    weights_path = 'weights2.pkl'
-    predictions_path = 'predictions.wtag'
+    weights_path = f'weights{model}.pkl'
+    predictions_path = f'predictions{model}.wtag'
+
+    time1 = datetime.datetime.now()
 
     statistics, feature2id = preprocess_train(train_path, threshold)
     get_optimal_vector(statistics=statistics, feature2id=feature2id, weights_path=weights_path, lam=lam)
+    time2 = datetime.datetime.now()
+    print(f'time for features creation: {time2-time1}')
 
     with open(weights_path, 'rb') as f:
         optimal_params, feature2id = pickle.load(f)
@@ -94,9 +108,12 @@ def main():
 
     print(pre_trained_weights)
     tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path)
-    accuracy = calc_accuracy(test_path,  predictions_path)
-    print(f'Accuracy is {accuracy}')
+    accuracy = calc_accuracy(test_path, predictions_path)
+    my_print += (f'Accuracy is {accuracy}\n')
+
+    print(my_print)
     get_metrics(test_path, feature2id, predictions_path)
+    # check_reproducible(test_path, pre_trained_weights, feature2id, predictions_path)
 
     # for B in range(2, 6):
     #     print(f'-------------------------------------- Running test1 for B={B} --------------------------------------')
